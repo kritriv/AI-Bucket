@@ -1,7 +1,10 @@
 const {news } = require('../../models');
 const { ObjectId } = require('mongodb');
+const path = require('path');
+const { deleteFiles } = require('../../utils/fileUtils');
 
-const UpdateNew = async (id, updateNewsData) => {
+
+const UpdateNew = async (id, updateNewsData, iconFile) => {
     try {
         console.log('Updating News with ID:', id);
         console.log('Update data:', updateNewsData);
@@ -10,12 +13,25 @@ const UpdateNew = async (id, updateNewsData) => {
         if (!ObjectId.isValid(id)) {
             throw new Error('Invalid News ID format');
         }
+        const currentnews = await news.findById(id);
+        if (!currentnews) {
+            throw new Error('news not found');
+        }
 
-        // Create the filter using ObjectId
-        const filter = { _id: new ObjectId(id) };
+        // Handle icon file replacement if provided
+        if (iconFile) {
+            // Remove old icon file if it exists
+            await deleteFiles(path.join(__dirname,"../../../uploads/news",currentnews.icon.filename));
+
+            // Update the new icon's path and filename
+            updateNewsData.icon = {
+                path: iconFile.path,       // Full path where the file is stored
+                filename: iconFile.filename // The filename assigned by multer
+            };
+        }
 
         // Update the News
-        const result = await news.findByIdAndUpdate(filter, updateNewsData, {
+        const result = await news.findByIdAndUpdate(id, updateNewsData, {
             new: true,
             runValidators: true, // Ensures validation rules are applied
         });

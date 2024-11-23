@@ -11,7 +11,7 @@ const tutorialSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-    },
+    },      
     link: {
         type: String,
         required: true,
@@ -26,20 +26,20 @@ const tutorialSchema = new mongoose.Schema({
     tool: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "tool",
-        autopopulate: true,  // Enable autopopulate for tool reference
+        autopopulate: {select: 'name _id icon listing'},  // Enable autopopulate for tool reference
     },
-    listing: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "listing",
-        // autopopulate: true,  // Enable autopopulate for listing array
-    }],
+    // listing: [{
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "listing",
+    //     // autopopulate: true,  // Enable autopopulate for listing array
+    // }],
 }, { timestamps: true });
 
 // Adding indexes
 tutorialSchema.index({ title: 1 });
 tutorialSchema.index({ link: 1 });
 tutorialSchema.index({ tool: 1 });
-tutorialSchema.index({ listing: 1 });
+// tutorialSchema.index({ listing: 1 });
 
 // Enable autopopulate plugin
 tutorialSchema.plugin(autopopulate);

@@ -21,11 +21,11 @@ const Viewtool = async ({ id, status, createdby, name, ListingName, sort, select
 
         // ======== Filter by Listing Name ========
         if (ListingName) {
-            queryObject['listing.name'] = { $regex: new RegExp(ListingName, 'i') }; // Filter by listing name (populated)
+            queryObject['listingid.name'] = { $regex: new RegExp(ListingName, 'i') }; // Filter by listing name (populated)
         }
 
         // ======== Sort, Select ========
-        let apiData = tool.find(queryObject).populate('listing', 'name'); // Populate listing to access name field
+        let apiData = tool.find(queryObject).populate('listingid', 'name'); // Populate listing to access name field
 
         const ObjCount = await tool.countDocuments(queryObject); // Count total results
 

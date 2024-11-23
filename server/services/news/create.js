@@ -1,7 +1,8 @@
 // const { user, category } = require('../../models');
 
 const { news } = require('../../models');
-
+const { deleteFiles } = require('../../utils/fileUtils');
+const path = require("path");
 // const AddCategory = async ({ status, createdby, name, description }) => {
     
 const Addnews = async ({ status,title,icon,news_link,website_link}) => {
@@ -22,7 +23,9 @@ const Addnews = async ({ status,title,icon,news_link,website_link}) => {
         const addnew = new news({
             status,
             title,
-            icon,
+            icon:{ path: icon.path,
+                filename: icon.filename,
+             },
             news_link,
             website_link,
 
@@ -31,6 +34,9 @@ const Addnews = async ({ status,title,icon,news_link,website_link}) => {
         const result = await addnew.save();
         return result;
     } catch (error) {
+        if(icon){
+            await deleteFiles(path.join(__dirname,'../../../uploads/news',icon.filename));
+        }
         throw new Error(`Error occurred while adding News: ${error.message}`);
     }
 };

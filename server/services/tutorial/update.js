@@ -1,4 +1,4 @@
-const {tutorial } = require('../../models');
+const {tutorial, tool } = require('../../models');
 const { ObjectId } = require('mongodb');
 
 const UpdateNew = async (id, updatetutorialData) => {
@@ -11,6 +11,18 @@ const UpdateNew = async (id, updatetutorialData) => {
             throw new Error('Invalid tutorial ID format');
         }
 
+
+        if (updatetutorialData.tool) {
+            if (!ObjectId.isValid(updatetutorialData.tool)) {
+                throw new Error('Invalid tool ID format');
+            }
+
+            // Check if category exists
+            const toolExists = await tool.findById(updatetutorialData.tool);
+            if (!toolExists) {
+                throw new Error('Tool does not exist');
+            }
+        }
         // Create the filter using ObjectId
         const filter = { _id: new ObjectId(id) };
 

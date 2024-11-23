@@ -1,11 +1,15 @@
 const mongoose = require("mongoose");
-const autopopulate = require('mongoose-autopopulate'); // Import autopopulate plugin
-
+const autoPopulate = require('mongoose-autopopulate');
+const path = require("path");
+const {deleteFiles} = require("../utils/fileUtils");
+const Tool = require("./tool");
+const Tutorial = require("./tutorial"); 
 const listingSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true, 'Listing name is required!'],
-        trim: true, // To remove any extra spaces
+        trim: true,
+        unique:true,
     },
     description: {
         type: String,
@@ -15,16 +19,30 @@ const listingSchema = new mongoose.Schema({
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "category",
-        required: [true, 'Category reference is required!'], // Ensure category is linked
-        autopopulate: { select: 'name _id' }, // Auto-populate and select only 'name' and '_id'
+        required: [true, 'Category reference is required!'],
+        autopopulate: { select: 'name _id' },
+    },
+    icon: {
+        path: String,
+        filename: String,
     },
     status: {
         type: Boolean,
         default: false,
     }
-}, { timestamps: true }); // Add timestamps to track createdAt and updatedAt
+}, { timestamps: true });
 
-// Enable the autopopulate plugin
-listingSchema.plugin(autopopulate);
+// Enable autopopulate plugin
+listingSchema.plugin(autoPopulate);
+
+
+// Static method for checking uniqueness
+listingSchema.statics.isNameUnique = async function(name, id) {
+    const existingListing = await this.findOne({ name });
+    return !existingListing || existingListing._id.equals(id);
+};
+listingSchema.index({ name: 1 }, { unique: true });
+    
+
 
 module.exports = mongoose.model("listing", listingSchema);

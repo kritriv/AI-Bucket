@@ -13,11 +13,10 @@ const blogSchema = z.object({
             required_error: 'Blog title is required!',
         }),
 
-    image: z
-        .string({
-            invalid_type_error: 'Image must be a string',
-            required_error: 'Image is required!',
-        }),
+    image: z.object({
+        path: z.string().min(1, { message: "Path is required and must be a non-empty string" }), // Ensure the path is a non-empty string
+        filename: z.string().min(1, { message: "Filename is required and must be a non-empty string" }) // Ensure the filename is a non-empty string
+    }).optional(),
 
     body: z
         .string({

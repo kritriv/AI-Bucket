@@ -1,27 +1,59 @@
-const { listing } = require('../../models');
+const { tool, tutorial, listing } = require('../../models');  // Assuming you have a listing model
+const { deleteFiles } = require('../../utils/fileUtils'); // Helper function for file deletion
+const { ObjectId } = require('mongodb');
+const path = require('path');
 
-const Deletelisting = async (id) => {
+// Main function to delete a listing and handle cascading deletions
+const deletelisting = async (id) => {
     try {
-        // Find and delete the listing by its ID
-        const result = await listing.findByIdAndDelete(id);
+        const listingDoc = await listing.findById(id);
+        if (!listingDoc) throw new Error(`listing not found with id: ${id}`);
 
-        // Check if the listing exists
-        if (!result) {
-            throw new Error('Listing not found');
+        // Step 1: Find tools associated with this listing
+        const toolsWithlisting = await tool.find({ listingid: listingDoc._id }, '_id listingid icon image');
+        const toolsToDelete = []; // tools to fully delete
+        const toolIconPaths = [];
+        const toolImagePaths = [];
+
+        for (const tool of toolsWithlisting) {
+            if (tool.listingid.length === 1) {
+                // tool has only this listing, so delete tool and collect file paths
+                toolsToDelete.push(tool._id);
+                toolIconPaths.push(...tool.icon.map(icon => path.join(__dirname, '../../../uploads/tool', icon.filename)));
+                toolImagePaths.push(...tool.image.map(img => path.join(__dirname, '../../../uploads/tool', img.filename)));
+            } else {
+                // tool has multiple listings, so just remove the reference
+                await tool.updateOne(
+                    { _id: tool._id },
+                    { $pull: { listingid: listingDoc._id } }
+                );
+            }
+        }
+        const iconFilePath = path.join(__dirname, '../../../uploads/listing', listingDoc.icon.filename);
+
+        // Step 2: Delete tools with only one listingid
+        if (toolsToDelete.length > 0) {
+            await tool.deleteMany({ _id: { $in: toolsToDelete } });
         }
 
-        // Uncomment and adapt this section if you need to delete associated products and sub-products
-        // const products = await Product.find({ listing: result._id });
-        // for (const product of products) {
-        //     await SubProduct.deleteMany({ _id: { $in: product.sub_products } });
-        //     await Specification.deleteMany({ sub_product: { $in: product.sub_products } });
-        // }
-        // await Product.deleteMany({ listing: result._id });
+        // // Step 3: Handle tutorials associated with the tools we deleted
+        // const tutorialsToDelete = await tutorial.find({ tool: { $in: toolsToDelete } }, 'image');
+        // const tutorialImagePaths = tutorialsToDelete
+        //     .map(tutorial => tutorial.image.map(img => path.join(__dirname, '../../../uploads/tutorial', img.filename)))
+        //     .flat();
+        
+        await tutorial.deleteMany({ tool: { $in: toolsToDelete } });
 
-        return result ;
+        // Step 4: Delete all collected files
+        await deleteFiles([...toolIconPaths, ...toolImagePaths, iconFilePath ]);
+
+        // Step 5: Finally, delete the listing itself
+        const result = await listing.findByIdAndDelete(id);
+
+        return result;
     } catch (error) {
         throw new Error(`Error occurred while deleting listing: ${error.message}`);
     }
 };
 
-module.exports = Deletelisting;
+module.exports = deletelisting;

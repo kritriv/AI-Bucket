@@ -1,7 +1,8 @@
 const {blog } = require('../../models');
 const { ObjectId } = require('mongodb');
+const { deleteFiles } = require('../../utils/fileUtils');
 
-const UpdateNew = async (id, updateblogData) => {
+const UpdateNew = async (id, updateblogData, imageFile) => {
     try {
         console.log('Updating blog with ID:', id);
         console.log('Update data:', updateblogData);
@@ -10,12 +11,27 @@ const UpdateNew = async (id, updateblogData) => {
         if (!ObjectId.isValid(id)) {
             throw new Error('Invalid blog ID format');
         }
+        // Fetch the current blog using the objectId
+        const currentblog = await blog.findById(id);
+        if (!currentblog) {
+            throw new Error('blog not found');
+        }
 
-        // Create the filter using ObjectId
-        const filter = { _id: new ObjectId(id) };
+        // Handle blog file replacement if provided
+        if (imageFile) {
+            // Remove old blog file if it exists
+            await deleteFiles(path.join(__dirname,'../../../uploads/blog',currentblog.image.filename));
+        }
+
+            // Update the new blog's path and filename
+            updateblogData.image = {
+                path: imageFile.path,       // Full path where the file is stored
+                filename: imageFile.filename // The filename assigned by multer
+            };
+        // const filter = { _id: new ObjectId(id) };
 
         // Update the blog
-        const result = await blog.findByIdAndUpdate(filter, updateblogData, {
+        const result = await blog.findByIdAndUpdate(id, updateblogData, {
             new: true,
             runValidators: true, // Ensures validation rules are applied
         });

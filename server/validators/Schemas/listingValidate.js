@@ -27,6 +27,10 @@ const listingSchema = z.object({
         .regex(/^[0-9a-fA-F]{24}$/, {
             message: 'Invalid category ID format',
         }), // Ensures that the category ID is a valid ObjectId format
+    icon: z.object({
+        path: z.string().min(1, { message: "Path is required and must be a non-empty string" }), // Ensure the path is a non-empty string
+        filename: z.string().min(1, { message: "Filename is required and must be a non-empty string" }) // Ensure the filename is a non-empty string
+        }).optional(),
 });
 
 module.exports = { listingSchema };

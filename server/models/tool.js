@@ -8,10 +8,11 @@ const toolSchema = new mongoose.Schema({
         unique: true,
         trim: true, // Remove any extra spaces
     },
-    icon: {
-        type: String,
-        required: true,
-    },
+    icon: [{
+            path: String,
+            filename: String,
+            // Required for storing the path to the uploaded image
+        }],
     shortDescription: {
         type: String,
         required: true,
@@ -22,14 +23,15 @@ const toolSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    image: {
-        type: String,
-        required: true,
-    },
-    listing: [{
+    image:[ {
+        path: String,
+        filename: String,
+        // Required for storing the path to the uploaded image
+    }],
+    listingid: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "listing",
-        autopopulate: { select: '_id name' } // Auto-populate with specific fields
+        autopopulate: { select: '_id name category' } // Auto-populate with specific fields
     }],
     Subscription: {
         type: String,

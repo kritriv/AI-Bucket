@@ -9,11 +9,12 @@ const newsSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
     },
     icon: {
-        type: String,
-        required: true
+        path: String,
+        filename: String,
+        // Required for storing the path to the uploaded image
     },
     news_link: {
         type: String,

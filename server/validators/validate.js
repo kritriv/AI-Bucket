@@ -6,10 +6,17 @@ const validate = (schema) => async (req, res, next) => {
         req.body = parsedBody;
         next();
     } catch (err) {
+        console.error('Validation errors:', err.errors); // Log the errors for debugging
         let message = 'Validation error';
+        
         if (err.errors && err.errors.length > 0) {
-            message = err.errors[0].message;
+            const detailedErrors = err.errors.map(e => ({
+                field: e.path.join('.'), // Create a dotted path for the field
+                message: e.message
+            }));
+            return handleApiResponse(res, 400, detailedErrors); // Return detailed errors
         }
+        
         handleApiResponse(res, 400, message);
     }
 };

@@ -1,64 +1,75 @@
 const express = require('express');
-
 const router = express.Router();
-// const { authMiddleware } = require('../middlewares/authentication');
-// const { hasPermissions } = require('../modules/permission');
-// const { uploadImg } = require('../middlewares/multer');
 const validate = require('../validators/validate');
+const { authMiddleware } = require('../middlewares/authentication');
+const { hasPermissions } = require('../modules/permission');
+const { createUploadMiddleware } = require('../middlewares/multer');
 
+// Function to generate routes dynamically
+function generateRoutes(entity, controller, schema, uploadFields) {
+    if (!controller || !schema) {
+        console.warn(`Skipping routes for entity: ${entity} due to missing controller or schema.`);
+        return;
+    }
 
+    const { ListAll, ReadItem, CreateItem, RemoveItem, UpdateItem } = controller;
 
-
-// function generateRoutes(entity, controller ){
-//     const {ListAll , ReadItem , CreateItem , RemoveItem , UpdateItem} = controller;
-
-//     router.get(`/${entity}s/`,ListAll);
-//     router.get(`/${entity}/:id`,ReadItem);
-//     router.post(`/${entity}/add`,CreateItem);
-//     router.delete(`/${entity}/:id`, RemoveItem);
-//     router.put(`/${entity}/:id`,UpdateItem);
-// }
-
-
-
-function generateRoutes(entity, controller, schema ){
-    const {ListAll , ReadItem , CreateItem , RemoveItem , UpdateItem} = controller;
-
-    router.get(`/${entity}s/`,ListAll);
-    router.get(`/${entity}/:id`,ReadItem);
-    router.post(`/${entity}/add`,validate(schema),CreateItem);
-    router.delete(`/${entity}/:id`, RemoveItem);
-    router.put(`/${entity}/:id`,validate(schema),UpdateItem);
+    // Ensure the basic CRUD handlers exist before defining the routes
+    if (ListAll) router.get(`/${entity}s/`, ListAll);
+    if (ReadItem) router.get(`/${entity}/:id`, ReadItem);
+    if (CreateItem) {
+        router.post(
+            `/${entity}/create`,
+            authMiddleware(hasPermissions('MEDIUM')), // Route for creating category
+            createUploadMiddleware(uploadFields), // Handle file upload first (Multer)
+            validate(schema), // Then validate the schema (Zod validation)
+            CreateItem // Finally, handle the creation logic
+        );
+    }
+    
+    if (RemoveItem) router.delete(`/${entity}/:id`,authMiddleware(hasPermissions('HIGH')), RemoveItem);
+    if (UpdateItem) {
+        router.put(
+            `/${entity}/:id`,
+            authMiddleware(hasPermissions('MEDIUM')),
+            createUploadMiddleware(uploadFields),
+            validate(schema),
+            UpdateItem
+        );
+    }
 }
 
-
+// Entity definitions
 const entities = {
     user: 'user',
     news: 'news',
-    category: "category",
-    listing: "listing",
-    tool: "tool",
-    tutorial: "tutorial",
-    gptList: "gptList",
-    event: "event",
-    blog: "blog",
-    contact: "contact",
+    category: 'category',
+    listing: 'listing',
+    tool: 'tool',
+    tutorial: 'tutorial',
+    gptList: 'gptList',
+    event: 'event',
+    blog: 'blog',
+    contact: 'contact',
 };
 
-
-const controllers ={
-    category: require('../contollers/category'),
-    listing: require('../contollers/listing'),
-    tool: require('../contollers/tool'),
-    news: require('../contollers/news'),
-    tutorial: require('../contollers/tutorial'),
-    gptList: require('../contollers/gptlist'),
-    event: require('../contollers/event'),
-    blog: require('../contollers/blog'),
-    contact: require('../contollers/contact'),
+// Controllers mapping
+const controllers = {
+    user: require('../controllers/User'),
+    category: require('../controllers/category'),
+    listing: require('../controllers/listing'),
+    tool: require('../controllers/tool'),
+    news: require('../controllers/news'),
+    tutorial: require('../controllers/tutorial'),
+    gptList: require('../controllers/gptlist'),
+    event: require('../controllers/event'),
+    blog: require('../controllers/blog'),
+    contact: require('../controllers/contact'),
 };
 
+// Schemas mapping
 const schemas = {
+    user: require('../validators/Schemas').Userschema,
     category: require('../validators/Schemas').categorySchema,
     listing: require('../validators/Schemas').listingSchema,
     tool: require('../validators/Schemas').toolSchema,
@@ -70,15 +81,24 @@ const schemas = {
     contact: require('../validators/Schemas').contactSchema,
 };
 
+// Upload fields mapping
+const uploadFields = {
+    category: [{ name: 'icon', maxCount: 1 }],
+    listing: [{name: 'icon', maxCount: 1}],
+    tool: [{ name: 'icon', maxCount: 1 }, { name: 'image', maxCount: 2 }],
+    news: [{ name: 'icon', maxCount: 1 }],
+    tutorial: [],
+    gptList: [],
+    event: [],
+    blog: [{ name: 'image', maxCount: 1 }],
+    contact: [], // No upload fields for 'contact'
+    user:[]
+};
 
-generateRoutes(entities.category, controllers.category, schemas.category );
-generateRoutes(entities.listing, controllers.listing, schemas.listing);
-generateRoutes(entities.tool, controllers.tool, schemas.tool);
-generateRoutes(entities.news, controllers.news, schemas.news);
-generateRoutes(entities.tutorial, controllers.tutorial, schemas.tutorial );
-generateRoutes(entities.gptList, controllers.gptList, schemas.gptList );
-generateRoutes(entities.event, controllers.event, schemas.event);
-generateRoutes(entities.blog, controllers.blog, schemas.blog);
-generateRoutes(entities.contact, controllers.contact, schemas.contact)
+// Generate routes for all entities dynamically
+for (const entity in entities) {
+    const uploadField = uploadFields[entity];
+    generateRoutes(entities[entity], controllers[entity], schemas[entity], uploadField);
+}
 
 module.exports = router;

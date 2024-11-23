@@ -13,11 +13,10 @@ const newsSchema = z.object({
             required_error: 'News title is required!',
         }),
 
-    icon: z
-        .string({
-            invalid_type_error: 'Icon must be a string',
-            required_error: 'Icon is required!',
-        }),
+    icon:z.object({
+        path: z.string().min(1, { message: "Path is required and must be a non-empty string" }), // Ensure the path is a non-empty string
+        filename: z.string().min(1, { message: "Filename is required and must be a non-empty string" }) // Ensure the filename is a non-empty string
+    }).optional(),
 
     news_link: z
         .string({

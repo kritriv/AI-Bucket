@@ -11,8 +11,8 @@ const blogSchema = new mongoose.Schema({
         unique: true,    // Added unique constraint
     },
     image: {
-        type: String,
-        required: true,  // Corrected spelling
+        path:String,
+        filename:String,// Corrected spelling
     },
     body: {
         type: String,

@@ -6,7 +6,6 @@ const ViewCategory = async ({ id, status, createdby, name, sort, select, page, s
         const queryObject = {};
         
         // ======= Filters Queries =======
-
         if (id) {
             queryObject._id = id;
         }
@@ -17,36 +16,33 @@ const ViewCategory = async ({ id, status, createdby, name, sort, select, page, s
             queryObject.createdby = createdby;
         }
         if (name) {
-            queryObject.name = { $regex: new RegExp(name, 'i') };
+            queryObject.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
         }
 
-        // ======== Short , Select ======
-
+        // ======== Short, Select ======
         let apiData = category.find(queryObject);
-        let ObjCount = await category.countDocuments(queryObject);
-        console.log(apiData)
+        const totalCount = await category.countDocuments(queryObject);
+        console.log(totalCount);
         if (sort) {
-            let sortFix = sort.replace(',', ' ');
+            const sortFix = sort.replace(',', ' ');
             apiData = apiData.sort(sortFix);
         } else {
-            apiData = apiData.sort({ createdAt: -1 });
+            apiData = apiData.sort({ createdAt: -1 }); // Default sorting
         }
+
         if (select) {
-            let selectFix = select.split(',').join(' ');
+            const selectFix = select.split(',').join(' ');
             apiData = apiData.select(selectFix);
         }
 
         // ===== Pagination and limits ====
-
         const { limit, offset } = limitOffsetPageNumber(page, size);
         apiData = apiData.skip(offset).limit(limit);
 
-        // const Categories = await apiData.populate('products').exec();
-        // return { Categories, total: ObjCount };
-        const Categories = await apiData.exec(); 
-        return {Categories , total: ObjCount }
+        const categories = await apiData.exec();
+        return { categories , total: totalCount };
     } catch (error) {
-        throw new Error('An error occurred while fetching Product Category: ' + error.message);
+        throw new Error(`An error occurred while fetching categories: ${error.message}`);
     }
 };
 
